@@ -20,6 +20,7 @@ export default function FormDialog({userdata,catdata,waldata,comdata}) {
   const {user} = useAuthContext(); 
   const [Transaction, setTransaction] = React.useState({
     Transid: '',
+    date: '',
     createdat: '',
     updatedat: '',
     description: '',
@@ -33,6 +34,7 @@ export default function FormDialog({userdata,catdata,waldata,comdata}) {
   });
   const initial = {
     Transid: '',
+    date: '',
     createdat: '',
     updatedat: '',
     description: '',
@@ -95,7 +97,7 @@ export default function FormDialog({userdata,catdata,waldata,comdata}) {
     const hours = String(newdate.getUTCHours()).padStart(2, '0');
     const minutes = String(newdate.getUTCMinutes()).padStart(2, '0');
     
-    return `${year}-${month}-${day} ${hours}:${minutes}`;
+    return `${month}-${day}-${year} ${hours}:${minutes}`;
   }
     
   const handleFormChange = (event) => {
@@ -115,12 +117,27 @@ export default function FormDialog({userdata,catdata,waldata,comdata}) {
 
   return randomId;
 }
+const format = (isoDateTime) =>{
+  const dateObj = new Date(isoDateTime);
+
+// Extract individual date and time components
+const year = dateObj.getFullYear().toString().substr(-2);
+const month = (dateObj.getMonth() + 1).toString().padStart(2, '0'); // Month is 0-based, so add 1
+const day = dateObj.getDate().toString().padStart(2, '0');
+const hours = dateObj.getHours().toString().padStart(2, '0');
+const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+
+// Format the date and time in the desired format
+ return `${month}-${day}-${year} ${hours}:${minutes}`;
+}
  const handleSubmit = () => {
   const currentDate = new Date();
   console.log(currentDate)
   Transaction['Transid'] = generateRandomId();
   Transaction['user_id'] = userdata['_id'];
   Transaction['user'] = userdata['name'];
+  Transaction['date'] = format(Transaction['date']);
+
   if(userdata['role'] !== 'admin'){
     Transaction['company'] = userdata['company'];
   }
@@ -128,6 +145,7 @@ export default function FormDialog({userdata,catdata,waldata,comdata}) {
   console.log(Transaction['company'])
   
   Transaction['createdat'] = formatDate(currentDate, Transaction['company']);
+  Transaction['updatedat'] = Transaction['createdat'];
   // Transaction['createdat'] = currentDate;
 
   setTransaction({...Transaction});
@@ -135,7 +153,7 @@ export default function FormDialog({userdata,catdata,waldata,comdata}) {
   console.log(userdata);
   if (
     !Transaction.Transid ||
-    !Transaction.createdat ||
+    !Transaction.date ||
     !Transaction.type ||
     !Transaction.category ||
     !Transaction.description ||
@@ -205,13 +223,13 @@ export default function FormDialog({userdata,catdata,waldata,comdata}) {
           required
             autoFocus
             margin="dense"
-            id="createdat"
+            id="date"
             label="  "
-            type="date"
+            type="datetime-local"
             fullWidth
             variant="standard"
-            name='createdat'
-            value={Transaction.createdat}
+            name='date'
+            value={Transaction.date}
             onChange={(e) => handleFormChange(e)}
           />
           <TextField

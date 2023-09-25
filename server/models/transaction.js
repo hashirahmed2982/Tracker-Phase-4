@@ -7,6 +7,10 @@ let TransactionSchema = new Schema({
         required: true,
         unique: true
     },
+    date: {
+        type: String,
+        required: true
+    },
     createdat: {
         type: String,
         required: true

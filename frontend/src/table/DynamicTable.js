@@ -25,22 +25,14 @@ import {
 } from '@mui/material';
 
 
-function DynamicTable({ TableData, url, catdata, waldata, comdata, column, height }) {
+function DynamicTable({ TableData, url, catdata, waldata, comdata, column, height, deleteUser, updateUser }) {
   const { user } = useAuthContext();
   //dynamic object to store edit variable values
+  TableData = TableData.slice().reverse();
   var [obj, setobj] = useState(TableData);
   useEffect(() => {
+    setobj(TableData);
   }, [TableData]);
-
-
-
-  function StringToStars(props) {
-  
-    // Create a string with the same number of '*' characters as the length of the input string
-    const starsString = '*'.repeat(props.length);
-
-    return starsString;
-  }
 
   const initial = TableData;
 
@@ -68,20 +60,7 @@ function DynamicTable({ TableData, url, catdata, waldata, comdata, column, heigh
   }
 
   //handle delete function
-  const deleteUser = (_id) => {
-    console.log(_id)
-    axios
-      .delete(
-        url + _id, { headers: { 'Authorization': 'Bearer ' + user['token'] }, })
-      .then((res) => {
-        if (res.status === 200) {
-          toast.success("Transaction successfully deleted");
-          window.location.reload();
 
-        } else Promise.reject();
-      })
-      .catch((err) => toast.error("Something went wrong"));
-  };
 
   //handle on change field values
   const handleFormChange = (event, index) => {
@@ -96,39 +75,20 @@ function DynamicTable({ TableData, url, catdata, waldata, comdata, column, heigh
     const hashed = await bcrypt.hash(password, saltRounds);
     return hashed;
   }
-  function formatDate(date, comp) {
-
-    const year = date.getUTCFullYear().toString().substr(-2);
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(date.getUTCDate()).padStart(2, '0');
-    const hours = String(date.getUTCHours()).padStart(2, '0');
-    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-
-    return `${year}-${month}-${day} ${hours}:${minutes}`;
+  const handlePassChange = async (event, index) => {
+    obj[index][event.target.name] = await hashPassword(event.target.value);
+    setobj({ ...obj })
+    
   }
 
-  //sends post api to url in order to update
-  const updateUser = async (_id, data) => {
-    const currentDate = new Date();
-    console.log(data)
-    data['updatedat'] = formatDate(currentDate, data['company']);
-    if(data['password']){data['password'] = await hashPassword(data['password']);}
-    
-    setedit(false);
-    axios
-      .put(
-        url +
-        _id,
-        data, { headers: { 'Authorization': 'Bearer ' + user['token'] }, }
-      )
-      .then((res) => {
-        if (res.status === 200) {
-          toast.success("Transaction successfully updated");
-          window.location.reload();
 
-        } else Promise.reject();
-      })
-      .catch((err) => toast.error("Something went wrong"));
+
+  //sends post api to url in order to update
+  const handleupdate = async (_id, data,url) => {
+    updateUser(_id, data,url);
+
+    setedit(false);
+
   };
 
   // get table row datas
@@ -139,10 +99,12 @@ function DynamicTable({ TableData, url, catdata, waldata, comdata, column, heigh
           <TableCell key="INDEX"> {index}</TableCell>
           {
             column.map((v) => {
-              return <TableCell>
+              return <TableCell sx={{ width: 150 }}>
                 {edit === index ? (
+                  console.log(data),
                   v === 'type' ? ( // Check if the field is 'type'
                     <Select
+                      variant="standard"
                       name={v}
                       placeholder={data[v]}
                       value={obj[index][v]} // Use the state variable for edited type
@@ -154,6 +116,8 @@ function DynamicTable({ TableData, url, catdata, waldata, comdata, column, heigh
                   ) : (
                     v === 'category' ? (
                       <Select
+                        variant="standard"
+
                         name={v}
                         placeholder={data[v]}
                         value={obj[index][v]} // Use the state variable for edited type
@@ -170,10 +134,17 @@ function DynamicTable({ TableData, url, catdata, waldata, comdata, column, heigh
                       placeholder={data[v]}
                       value={obj[index][v]}
                       onChange={(event) => handleFormChange(event, index)}
-                      multiline
                       variant="standard"
                       disabled
+                    />) : v === 'Transid' ||v === 'id' ||v === 'catid' ||v === 'wallid' ? (<TextField
+                      name={v}
+                      placeholder={data[v]}
+                      value={obj[index][v]}
+                      disabled
+                      variant="standard"
                     />) : v === 'wallet' ? (<Select
+                      variant="standard"
+
                       name={v}
                       placeholder={data[v]}
                       value={obj[index][v]} // Use the state variable for edited type
@@ -185,6 +156,8 @@ function DynamicTable({ TableData, url, catdata, waldata, comdata, column, heigh
                         </MenuItem>
                       ))}
                     </Select>) : v === 'company' ? (<Select
+                      variant="standard"
+
                       name={v}
                       placeholder={data[v]}
                       value={obj[index][v]} // Use the state variable for edited type
@@ -196,6 +169,8 @@ function DynamicTable({ TableData, url, catdata, waldata, comdata, column, heigh
                         </MenuItem>
                       ))}
                     </Select>) : v === 'role' ? (<Select
+                      variant="standard"
+
                       name={v}
                       placeholder={data[v]}
                       value={obj[index][v]} // Use the state variable for edited type
@@ -218,9 +193,11 @@ function DynamicTable({ TableData, url, catdata, waldata, comdata, column, heigh
                           autoComplete="current-password"
                           variant="standard"
                           // value={obj[index][v]}
-                          onChange={(event) => handleFormChange(event, index)}
+                          onChange={(event) => handlePassChange(event, index)}
                         />
                       ) : v === 'timezone' ? (<Select
+                        variant="standard"
+
                         name={v}
                         placeholder={data[v]}
                         value={obj[index][v]} // Use the state variable for edited type
@@ -244,15 +221,15 @@ function DynamicTable({ TableData, url, catdata, waldata, comdata, column, heigh
                         />
                       )
                   )
-                ) : 
-                  
-                    v === 'password' ? (
-                      
-                      "*****"
-                      
-                      ) 
-                   :
-                  data[v]
+                ) :
+
+                  v === 'password' ? (
+
+                    "*****"
+
+                  )
+                    :
+                    data[v]
                 }
               </TableCell>
             })
@@ -264,7 +241,7 @@ function DynamicTable({ TableData, url, catdata, waldata, comdata, column, heigh
               </IconButton>
               &nbsp;
 
-              <IconButton aria-label="delete" size="small" onClick={() => deleteUser(data._id)}>
+              <IconButton aria-label="delete" size="small" onClick={() => deleteUser(data._id,url)}>
                 <DeleteIcon sx={{ "&:hover": { color: "red" } }} fontSize="small" />
               </IconButton>
 
@@ -273,7 +250,7 @@ function DynamicTable({ TableData, url, catdata, waldata, comdata, column, heigh
                 <CancelIcon sx={{ "&:hover": { color: "red" } }} fontSize="small" />
               </IconButton>
               &nbsp;
-              <IconButton size="small" onClick={() => updateUser(data._id, obj[index])}>
+              <IconButton size="small" onClick={() => handleupdate(data._id, obj[index] , url)}>
                 <CheckIcon sx={{ "&:hover": { color: "green" } }} fontSize="small" />
               </IconButton>
 

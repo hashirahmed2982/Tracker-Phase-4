@@ -15,6 +15,9 @@ import MagnifyingGlassIcon from '@heroicons/react/24/solid/MagnifyingGlassIcon';
 import { InputAdornment, OutlinedInput, Paper } from '@mui/material';
 import FormDialog from '../../table/add';
 import { TextField, MenuItem } from '@mui/material';
+import { toast } from 'react-hot-toast'
+import bcrypt from 'bcryptjs'
+import { allTimezones } from "../../components/timezones";
 ;
 
 
@@ -33,7 +36,7 @@ function HomeAdmin() {
   const [curr, setcurr] = useState("");
   const [com, setcom] = useState({ company: "ALL" });
 
-  const usercolumn = ['Transid', 'createdat', 'updatedat', 'description', 'category', 'type', 'amount', 'wallet', 'user', 'company'];
+  const usercolumn = ['Transid','date', 'createdat', 'updatedat', 'description', 'category', 'type', 'amount', 'wallet', 'user', 'company'];
 
   const { user } = useAuthContext();
   console.log(user)
@@ -78,7 +81,101 @@ function HomeAdmin() {
     gettable()
     getCurr()
   }
+  
+  function getOffset(timezoneName) {
+    // Find the timezone object with the matching name
+    const currtimezone = allTimezones.find((tz) => tz.name === timezoneName);
 
+
+    return offsetStringToInt(currtimezone.offset);
+  }
+
+  function offsetStringToInt(offset) {
+    // Use regular expression to extract the sign and hours from the offset string
+    const matches = offset.match(/GMT([-+])(\d{2}):(\d{2})/);
+  
+    if (!matches) {
+      throw new Error('Invalid offset format');
+    }
+  
+    const sign = matches[1] === '-' ? -1 : 1;
+    const hours = parseInt(matches[2]);
+  
+    // Convert the offset to an integer, taking the sign into account
+    const offsetInt = sign * hours;
+  
+    return offsetInt;
+  }
+  
+  function addHours(date, hours) {
+    date.setHours(date.getHours() + hours);
+  
+    return date;
+  }
+  function formatDate(date, comp) {
+
+  
+    // console.log(comdata.find((obj) => obj.name === comp).timezone)
+
+    var tzOffset = getOffset(comdata.find((obj) => obj.name === comp).timezone)
+
+    console.log(tzOffset)
+    const newdate = addHours(date, tzOffset);
+    console.log(date)
+    
+    // newdate = manipulateDateByOffset(date, tzOffset);
+
+    const year = newdate.getUTCFullYear().toString().slice(-2);
+    const month = String(newdate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(newdate.getUTCDate()).padStart(2, '0');
+    const hours = String(newdate.getUTCHours()).padStart(2, '0');
+    const minutes = String(newdate.getUTCMinutes()).padStart(2, '0');
+    
+    return `${month}-${day}-${year} ${hours}:${minutes}`;
+  }
+  async function hashPassword(password) {
+    const saltRounds = 10; // Number of salt rounds (higher is more secure but slower)
+    const hashed = await bcrypt.hash(password, saltRounds);
+    return hashed;
+  }
+  const updateUser = async (_id, data,url) => {
+    const currentDate = new Date();
+    console.log(data)
+    data['updatedat'] = formatDate(currentDate, data['company']);
+    
+    
+    
+    axios
+      .put(
+        url +
+        _id,
+        data, { headers: { 'Authorization': 'Bearer ' + user['token'] }, }
+      )
+      .then((res) => {
+        if (res.status === 200) {
+          toast.success("Transaction successfully updated");
+          //window.location.reload();
+          gettable();
+
+        } else Promise.reject();
+      })
+      .catch((err) => toast.error("Something went wrong"));
+  };
+  const deleteUser = (_id,url) => {
+    console.log(_id)
+    axios
+      .delete(
+        url + _id, { headers: { 'Authorization': 'Bearer ' + user['token'] }, })
+      .then((res) => {
+        if (res.status === 200) {
+          toast.success("Transaction successfully deleted");
+          gettable();
+          //window.location.reload();
+
+        } else Promise.reject();
+      })
+      .catch((err) => toast.error("Something went wrong"));
+  };
 
   const getUser = () => {
     axios.get(userurl, { headers: { 'Authorization': 'Bearer ' + user['token'] }, }).then(({ data }) => {
@@ -295,7 +392,7 @@ function HomeAdmin() {
 
 
 
-          <DynamicTable TableData={rows} tranurl={tranurl} comdata={comdata} url={url} catdata={catdata} waldata={waldata} column={usercolumn} />
+          <DynamicTable updateUser={updateUser} deleteUser={deleteUser} TableData={rows}  comdata={comdata} url={url} catdata={catdata} waldata={waldata} column={usercolumn} />
         </Container></Box><br /></>
     );
 

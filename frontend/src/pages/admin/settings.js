@@ -13,6 +13,8 @@ import { usersurl, comurl, caturl, walurl, userurl } from "../../components/url"
 import "../../components/loader/style.css"
 import Spinner from "../../components/loader/spinner";
 import { useAuthContext } from "../../components/hooks/useAuthContext";
+import { toast } from 'react-hot-toast'
+import bcrypt from 'bcryptjs'
 
 
 
@@ -24,6 +26,7 @@ function Settings() {
     const [compDatas, setCompData] = useState([]);
     const [catDatas, setCatData] = useState([]);
     const [walDatas, setWalData] = useState([]);
+    const [pass, setpass] = useState("");
     const [userdata2, setuserdata2] = useState([]);
 
 
@@ -58,6 +61,61 @@ function Settings() {
         getUser();
     }, []);
     
+    const deleteUser = (_id,url) => {
+        console.log(_id)
+        axios
+          .delete(
+            url + _id, { headers: { 'Authorization': 'Bearer ' + user['token'] }, })
+          .then((res) => {
+            if (res.status === 200) {
+              toast.success("Transaction successfully deleted");
+              getUserData();
+        getCompData();
+        getCatData();
+        getWalData();
+        getUser();
+              //window.location.reload();
+    
+            } else Promise.reject();
+          })
+          .catch((err) => toast.error("Something went wrong"));
+      };
+      function formatDate(date, comp) {
+    
+        const year = date.getUTCFullYear().toString().substr(-2);
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+    
+        return `${year}-${month}-${day} ${hours}:${minutes}`;
+      }
+     
+      const updateUser = async (_id, data,url) => {
+        const currentDate = new Date();
+        console.log(data)
+        data['updatedat'] = formatDate(currentDate, data['company']);
+        axios
+          .put(
+            url +
+            _id,
+            data, { headers: { 'Authorization': 'Bearer ' + user['token'] }, }
+          )
+          .then((res) => {
+            if (res.status === 200) {
+              toast.success("Transaction successfully updated");
+              //window.location.reload();
+              getUserData();
+              getCompData();
+              getCatData();
+              getWalData();
+              getUser();
+    
+            } else Promise.reject();
+          })
+          .catch((err) => toast.error("Something went wrong"));
+      };
+
     const getUser = () => {
         axios.get(userurl, { headers: { 'Authorization': 'Bearer ' + user['token'] }, }).then(({ data }) => {
           setuserdata2(data[0]);
@@ -123,14 +181,14 @@ function Settings() {
                     <div class='row'>
                         <div className='table-container'>
                             <AddUser url={usersurl} compdata={compDatas} />
-                            <DynamicTable TableData={userDatas} url={usersurl} comdata={compDatas} column={usercol} height={350} />
+                            <DynamicTable deleteUser={deleteUser} updateUser={updateUser} TableData={userDatas} url={usersurl} comdata={compDatas} column={usercol} height={350} />
                         </div>
                     </div>
                     <h3>&nbsp;&nbsp;Category Table</h3>
                     <div class='row'>
                         <div className='table-container'>
                             <AddCat url={caturl} />
-                            <DynamicTable TableData={catDatas} url={caturl} comdata={compDatas} column={catcol} height={350} />
+                            <DynamicTable deleteUser={deleteUser} updateUser={updateUser} TableData={catDatas} url={caturl} comdata={compDatas} column={catcol} height={350} />
                         </div>
                     </div>
                 </Container>
@@ -140,7 +198,7 @@ function Settings() {
                     <div class='row'>
                         <div className='table-container'>
                             <AddComp url={comurl} />
-                            <DynamicTable TableData={compDatas} url={comurl} comdata={compDatas} column={compcol} height={350} />
+                            <DynamicTable deleteUser={deleteUser} updateUser={updateUser} TableData={compDatas} url={comurl} comdata={compDatas} column={compcol} height={350} />
                         </div>
                     </div>
 
@@ -151,7 +209,7 @@ function Settings() {
                     <div class='row'>
                         <div className='table-container'>
                             <AddWall url={walurl} />
-                            <DynamicTable TableData={walDatas} url={walurl} column={walcol} height={350} />
+                            <DynamicTable deleteUser={deleteUser} updateUser={updateUser} TableData={walDatas} url={walurl} column={walcol} height={350} />
                         </div>
                     </div>
 
